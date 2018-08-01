@@ -28,6 +28,13 @@ class Hectorbot_Core:
 	def __init__(self, bot, db_hook):
 		self.bot = bot
 		self.db = db_hook
+
+	
+	@commands.command()
+	async def version(self, ctx):
+		msg = await ctx.send('Hector version 0.1.0')
+		await track(msg, ctx.author)
+
 	
 	def _construct_error_embed(self, command_name, error_name, error_text, full_command_string, full_backtrace=None):
 		title = "⚠ An error was encountered while processing the {0} command".format(command_name)
