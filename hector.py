@@ -11,7 +11,7 @@ from permissions import chanop_only
 from messages import track
 
 bot_url = 'https://discordapp.com/api/oauth2/authorize?client_id={0}&scope=bot&permissions=469838928'
-bot_prefix = '|'
+bot_prefix = '>'
 bot_desc = '''Hector, RP Channel Bot
 
 Hector assists in managing channels for RP servers.
@@ -92,6 +92,8 @@ class Hectorbot_Core:
 	
 	async def on_message(self, message):
 		if 'scp-1360' in message.content.lower() or 'scp 1360' in message.content.lower():
+			if message.author.id == self.bot.user.id:
+				return
 			msg = await message.channel.send('*((I have a name, you know.))*')
 			await track(msg, message.author)
 		if message.author.id != self.bot.user.id and self.bot.user in message.mentions:
