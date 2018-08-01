@@ -11,7 +11,7 @@ from permissions import chanop_only
 from messages import track
 
 bot_url = 'https://discordapp.com/api/oauth2/authorize?client_id={0}&scope=bot&permissions=469838928'
-bot_prefix = '>'
+bot_prefix = '|'
 bot_desc = '''Hector, RP Channel Bot
 
 Hector assists in managing channels for RP servers.
