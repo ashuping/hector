@@ -1,0 +1,5 @@
+{
+	"command_prefix" : "|",
+	"description" : "Hector, RP Channel Bot\n\nHector assists in managing channels for RP servers.\n\nNamed after SCP-1360 (http://www.scp-wiki.net/scp-1360), an android\n\ncreated by Anderson Robotics.\n\nProfile picture from Wikimedia Commons, https://commons.wikimedia.org/wiki/File:Toyota_Robot_at_Toyota_Kaikan.jpg",
+	"token" : "INSERT YOUR BOT TOKEN HERE!"
+}

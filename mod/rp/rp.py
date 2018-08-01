@@ -154,6 +154,7 @@ class RPManager:
 			else:
 				cur.execute('UPDATE regions SET name=?,description=?,status=?,active_category=? WHERE channel_id=? AND guild_id=?;',(region['name'],region['description'],region['status'],region['active_category'],region['channel_id'],region['guild_id']))
 
+	
 	@commands.group()
 	@chanop_only()
 	async def rpset(self, ctx):
@@ -184,16 +185,22 @@ class RPManager:
 		location = location.strip()
 
 		for region in regions:
-			if location in region['name'].strip().lower():
+			if self._sanitize_channel_name(location) in self._sanitize_channel_name(region['name'].strip()):
 				regions_filtered.append(region)
 
-		if len(regions_filtered) == 0:
+		if len(location) == 0:
+			region = await self._get_region(ctx.guild.id, ctx.channel.id)
+			if not region:
+				raise commands.BadArgument('No region name provided and this channel is not a region! Use {0}makeregion to convert.'.format(self.bot.command_prefix))
+			else:
+				final_region = region
+		elif len(regions_filtered) == 0:
 			if await is_chanop(ctx):
 				msg = await ctx.send('No region found. Press ✳️ within 10 seconds to create a new region.')
 				await msg.add_reaction('\u2733')
 
 				def check(reaction, user):
-					return user == ctx.message.author and str(reaction.emoji) == '\u2733'
+					return user == ctx.message.author and str(reaction.emoji) == '\u2733' and reaction.message.id == msg.id
 
 				try:
 					reaction, user = await self.bot.wait_for('reaction_add', timeout=10, check=check)
@@ -276,7 +283,7 @@ class RPManager:
 		if not name:
 			raise commands.BadArgument('Please name the new Region.')
 		if await self._get_region(ctx.guild.id, ctx.channel.id):
-			raise commands.CheckFailure('Channel {0} is already a region!'.format(ctx.channel.mention))
+			raise commands.CheckFailure('Channel #{0} is already a region!'.format(ctx.channel.name))
 		
 		if ctx.channel.topic:
 			await self._generate_region(ctx.guild, name, description=ctx.channel.topic, active_category=ctx.channel.category_id, existing_channel=ctx.channel)
@@ -293,7 +300,7 @@ class RPManager:
 		region = await self._get_region(ctx.guild.id, ctx.channel.id)
 		
 		if not region:
-			raise commands.CheckFailure('Channel {0} is not a region!'.format(ctx.channel.mention))
+			raise commands.CheckFailure('Channel #{0} is not a region!'.format(ctx.channel.name))
 
 		with sql_cur(self.db) as cur:
 			cur.execute('DELETE FROM regions WHERE channel_id=?;', (ctx.channel.id,))
@@ -302,17 +309,20 @@ class RPManager:
 	
 	@commands.command()
 	@chanop_only()
-	async def move(self, ctx):
+	async def move(self, ctx, channel: discord.TextChannel=None):
 		''' Changes the category where an RP channel moves to when it is active. '''
+		if not channel:
+			channel = ctx.channel
 
-		target_region = await self._get_region(ctx.guild.id, ctx.channel.id)
+		target_region = await self._get_region(ctx.guild.id, channel.id)
 		if not target_region:
-			raise commands.CheckFailure('Channel {0} has no associated Region!'.format(ctx.channel.mention))
-
-		def check(reaction, user):
-			return user == ctx.message.author and str(reaction.emoji) == '\u2733'
+			raise commands.CheckFailure('Channel #{0} has no associated Region!'.format(ctx.channel.name))
 
 		msg = await ctx.send('Move the channel to the desired target category. When finished, press \u2733. (this command times out in 5 minutes)')
+
+		def check(reaction, user):
+			return user == ctx.message.author and str(reaction.emoji) == '\u2733' and reaction.message.id == msg.id
+
 		await msg.add_reaction('\u2733')
 		try:
 			reaction, user = await self.bot.wait_for('reaction_add', timeout=300, check=check)
@@ -321,7 +331,7 @@ class RPManager:
 			pass
 
 		finally:
-			target_region['active_category'] = ctx.channel.category_id
+			target_region['active_category'] = channel.category_id
 			response = ''
 			if ctx.channel.category_id:
 				response = 'Set category for {0} to {1}.'.format(target_region['name'],target_region['active_category'])
@@ -338,12 +348,27 @@ class RPManager:
 	async def describe(self, ctx, *, description):
 		target_region = await self._get_region(ctx.guild.id, ctx.channel.id)
 		if not target_region:
-			raise commands.CheckFailure('Channel {0} has no associate Region!'.format(ctx.channel.mention))
+			raise commands.CheckFailure('Channel #{0} has no associate Region!'.format(ctx.channel.name))
 
 		target_region['description'] = str(description)
 
 		await self._refresh_region_meta(target_region)
 		await ctx.message.add_reaction('✅')
+	
+
+	@commands.command()
+	async def fix(self, ctx, channel: discord.TextChannel = None):
+		''' Updates a location's channel (i.e. category, permissions, etc.) '''
+		if not channel:
+			channel = ctx.channel
+
+		channel_meta = await self._get_region(ctx.guild.id, channel.id)
+		if not channel_meta:
+			raise commands.BadArgument('Channel #{0} has no associated region!'.format(channel.name))
+		else:
+			await self._refresh_region_meta(channel_meta)
+			await ctx.message.add_reaction('✅')
+
 	
 	@commands.command()
 	async def close(self, ctx, *location_raw):
@@ -361,8 +386,14 @@ class RPManager:
 		for region in regions:
 			if location in region['name'].strip().lower():
 				regions_filtered.append(region)
-
-		if len(regions_filtered) == 0:
+		
+		if len(location) == 0:
+			region = await self._get_region(ctx.guild.id, ctx.channel.id)
+			if not region:
+				raise commands.BadArgument('No region name provided, and this channel has no associated region!')
+			else:
+				final_region = region
+		elif len(regions_filtered) == 0:
 			raise commands.BadArgument('No regions matching query "{0}"'.format(location))
 		elif len(regions_filtered) > 1:
 			tex = 'Ambiguous input. Matching channels:\n```\n'
@@ -380,13 +411,14 @@ class RPManager:
 			await ctx.message.add_reaction('❓')
 			return
 		else:
-			region = regions_filtered[0]
-			if region['status'] == 1:
-				raise commands.BadArgument('Region {0} is already closed.'.format(region['name']))
-			else:
-				region['status'] = 1
-				await self._refresh_region_meta(region)
-				await ctx.message.add_reaction('✅')
+			final_region = regions_filtered[0]
+
+		if final_region['status'] == 1:
+			raise commands.BadArgument('Region {0} is already closed.'.format(region['name']))
+		else:
+			final_region['status'] = 1
+			await self._refresh_region_meta(final_region)
+			await ctx.message.add_reaction('✅')
 
 
 	@commands.command()

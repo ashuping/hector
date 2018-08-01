@@ -1,5 +1,5 @@
 # Just for the sake of clarity, NEVER post your bot token anywhere.
-.bot_token
+.bot_info.json
 
 # Don't commit the database file, for obvious reasons
 data/sqlite3.db

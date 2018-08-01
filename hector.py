@@ -2,6 +2,7 @@
 import sys
 import traceback
 import math
+import json
 
 import discord
 from discord.ext import commands
@@ -10,18 +11,18 @@ from sql.sql import sql_cur, sql_con
 from permissions import chanop_only
 from messages import track
 
+settings = None
+bot_version = ''
+with open('.bot_info.json') as bot_info:
+	settings = json.load(bot_info)
+
+with open('version.json') as version:
+	bot_version = json.load(version)['version']
+
 bot_url = 'https://discordapp.com/api/oauth2/authorize?client_id={0}&scope=bot&permissions=469838928'
-bot_prefix = '|'
-bot_desc = '''Hector, RP Channel Bot
-
-Hector assists in managing channels for RP servers.
-
-Named after SCP-1360 (http://www.scp-wiki.net/scp-1360), an android 
-created by Anderson Robotics.
-
-Profile picture from Wikimedia Commons, 
-https://commons.wikimedia.org/wiki/File:Toyota_Robot_at_Toyota_Kaikan.jpg
-'''
+bot_prefix = settings['command_prefix']
+bot_desc = settings['description']
+bot_token = settings['token']
 
 class Hectorbot_Core:
 	''' Basic functionality '''
@@ -32,7 +33,8 @@ class Hectorbot_Core:
 	
 	@commands.command()
 	async def version(self, ctx):
-		msg = await ctx.send('Hector version 0.1.0')
+		global bot_version
+		msg = await ctx.send('Hector version {0}'.format(bot_version))
 		await track(msg, ctx.author)
 
 	
@@ -132,6 +134,25 @@ class Hectorbot_Core:
 			new_embed = self._construct_error_embed(row[0],row[1],row[2],row[3],row[4])
 			await to_edit.edit(content='⚠ Command error ⚠',embed=new_embed)
 	
+
+	async def on_raw_reaction_remove(self, payload):
+		if payload.user_id == self.bot.user.id:
+			return
+		if payload.emoji.name == '\u2733':
+			row = None
+			with sql_cur(self.db) as cur:
+				cur.execute('SELECT command_name, error_name, error_text, full_command_string, full_backtrace FROM error_messages WHERE message_id=? AND channel_id=?;',(payload.message_id, payload.channel_id))
+				row = cur.fetchone()
+			if not row:
+				return
+
+			to_edit = await self.bot.get_channel(payload.channel_id).get_message(payload.message_id)
+			new_embed = self._construct_error_embed(row[0],row[1],row[2],row[3])
+			await to_edit.edit(content='⚠ Command error ⚠',embed=new_embed)
+	
+				
+
+	
 	async def on_ready(self):
 		global bot_url
 		processed_url = bot_url.format(self.bot.user.id)
@@ -141,7 +162,7 @@ class Hectorbot_Core:
 	async def on_command_completion(self, ctx):
 		if ctx.command.name == 'help':
 			async for msg in ctx.history(limit=10):
-				if msg.author == self.bot.user and 'command for more info on a command.' in msg.content:
+				if msg.author == self.bot.user:
 					await track(msg, ctx.message.author)
 					break
 				
@@ -177,8 +198,4 @@ hector_bot.add_cog(Hectorbot_Core(hector_bot, global_db_hook))
 hector_bot.load_extension('permissions')
 hector_bot.load_extension('mod.rp.rp')
 
-tkn = ''
-with open('.bot_token') as token:
-	tkn = str(token.readline()).strip()
-
-hector_bot.run(tkn) # Put your bot token in a file named .bot_token in the root directory.
+hector_bot.run(bot_token) # Token is loaded from the file '.bot_info.json' - Rename 'bot-info.json.skel' to '.bot-info.json' and put your token there.
