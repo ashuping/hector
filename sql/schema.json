@@ -20,12 +20,16 @@
 		"name" : "permissions",
 		"schema" : [
 			{
-				"name" : "admin_role_id",
+				"name" : "guild_id",
 				"type" : "BIGINT"
 			},
 			{
-				"name" : "guild_id",
+				"name" : "role_id",
 				"type" : "BIGINT"
+			},
+			{
+				"name" : "permissions",
+				"type" : "INTEGER"
 			}
 		]
 	},
@@ -68,6 +72,10 @@
 			{
 				"name" : "inactive_category",
 				"type" : "BIGINT"
+			},
+			{
+				"name" : "region_open_mode",
+				"type" : "INTEGER"
 			}
 		]
 	},

@@ -1,0 +1,150 @@
+[
+	{
+		"name" : "standard",
+		"description" : "The standard quickstart setup. The 'frozen' role can be assigned to users in order to prevent all Hector-related action in an emergency.",
+		"roles" : [
+		{
+				"name" : "Administrator",
+				"permissions" : {
+					"OPEN" : "GRANT",
+					"CLOSE" : "GRANT",
+					"CREATE_NEW" : "GRANT",
+					"DESCRIBE" : "GRANT",
+					"MOVE" : "GRANT",
+					"CONVERT" : "GRANT",
+					"UNMAKE" : "GRANT",
+					"MANAGE" : "GRANT"
+				}
+			},
+			{
+				"name" : "Chanop",
+				"permissions" : {
+					"OPEN" : "GRANT",
+					"CLOSE" : "GRANT",
+					"CREATE_NEW" : "GRANT",
+					"DESCRIBE" : "GRANT",
+					"MOVE" : "GRANT",
+					"CONVERT" : "GRANT",
+					"UNMAKE" : "GRANT"
+				}
+			},
+			{
+				"name" : "Frozen",
+				"permissions" : {
+					"OPEN" : "DENY",
+					"CLOSE" : "DENY",
+					"CREATE_NEW" : "DENY",
+					"DESCRIBE" : "DENY",
+					"MOVE" : "DENY",
+					"CONVERT" : "DENY",
+					"UNMAKE" : "DENY",
+					"MANAGE" : "DENY"
+				}
+			},
+			{
+				"name" : "Trusted",
+				"permissions" : {
+					"CREATE_NEW" : "GRANT",
+					"DESCRIBE" : "GRANT"
+				}
+			},
+			{
+				"name" : "*",
+				"permissions" : {
+					"OPEN" : "GRANT",
+					"CLOSE" : "GRANT"
+				}
+			}
+		]
+	},
+	{
+		"name" : "open",
+		"description" : "Grant all users the ability to open, close, create, convert, describe, and unmake regions. An 'Admin' role is created with the ability to manage permissions. This preset is not recommended for public servers.",
+		"roles" : [
+		{
+				"name" : "Admin",
+				"permissions" : {
+					"OPEN" : "GRANT",
+					"CLOSE" : "GRANT",
+					"CREATE_NEW" : "GRANT",
+					"DESCRIBE" : "GRANT",
+					"MOVE" : "GRANT",
+					"CONVERT" : "GRANT",
+					"UNMAKE" : "GRANT",
+					"MANAGE" : "GRANT"
+				}
+			},
+			{
+				"name" : "*",
+				"permissions" : {
+					"OPEN" : "GRANT",
+					"CLOSE" : "GRANT",
+					"CREATE_NEW" : "GRANT",
+					"DESCRIBE" : "GRANT",
+					"MOVE" : "GRANT",
+					"CONVERT" : "GRANT",
+					"UNMAKE" : "GRANT"
+				}
+			}
+			
+		]
+	},
+	{
+		"name" : "strict",
+		"description" : "A more strict version of the standard preset, where no permissions are granted globally.",
+		"roles" : [
+			{
+				"name" : "Administrator",
+				"permissions" : {
+					"OPEN" : "GRANT",
+					"CLOSE" : "GRANT",
+					"CREATE_NEW" : "GRANT",
+					"DESCRIBE" : "GRANT",
+					"MOVE" : "GRANT",
+					"CONVERT" : "GRANT",
+					"UNMAKE" : "GRANT",
+					"MANAGE" : "GRANT"
+				}
+			},
+			{
+				"name" : "Frozen",
+				"permissions" : {
+					"OPEN" : "DENY",
+					"CLOSE" : "DENY",
+					"CREATE_NEW" : "DENY",
+					"DESCRIBE" : "DENY",
+					"MOVE" : "DENY",
+					"CONVERT" : "DENY",
+					"UNMAKE" : "DENY",
+					"MANAGE" : "DENY"
+				}
+			},
+			{
+				"name" : "Chanop",
+				"permissions" : {
+					"OPEN" : "GRANT",
+					"CLOSE" : "GRANT",
+					"CREATE_NEW" : "GRANT",
+					"DESCRIBE" : "GRANT",
+					"MOVE" : "GRANT",
+					"CONVERT" : "GRANT",
+					"UNMAKE" : "GRANT"
+				}
+			},
+			{
+				"name" : "Trusted",
+				"permissions" : {
+					"CREATE_NEW" : "GRANT",
+					"DESCRIBE" : "GRANT"
+				}
+			},
+			{
+				"name" : "Player",
+				"permissions" : {
+					"OPEN" : "GRANT",
+					"CLOSE" : "GRANT"
+				}
+			}
+		]
+	}
+]
