@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 
 from sql.sql import sql_cur, sql_con
-from permissions import chanop_only
+import permissions
 from messages import track
 
 settings = None
@@ -32,7 +32,15 @@ class Hectorbot_Core:
 
 	
 	@commands.command()
+	async def zyn(self, ctx):
+		''' Marp. '''
+		msg = await ctx.send('Marp.')
+		await track(msg, ctx.author)
+
+	
+	@commands.command()
 	async def version(self, ctx):
+		''' Returns the current version of Hector. '''
 		global bot_version
 		msg = await ctx.send('Hector version {0}'.format(bot_version))
 		await track(msg, ctx.author)
@@ -82,7 +90,7 @@ class Hectorbot_Core:
 				embed = self._construct_error_embed(ctx.command.name, str(type(error)), str(error), ctx.message.content)
 
 			await ctx.message.add_reaction('⚠')
-			msg = await ctx.send(content='⚠ Command error ⚠', embed=embed)
+			msg = await ctx.send(content='', embed=embed)
 			await track(msg, ctx.author)
 			if not ctx.command:
 				return
@@ -184,11 +192,6 @@ class Hectorbot_Core:
 
 		msg = await ctx.send(content="Invite me to your server!", embed=embed)
 		await track(msg, ctx.author)
-	
-	@commands.command()
-	@chanop_only()
-	async def perms_test(self, ctx):
-		await ctx.message.add_reaction('✅')
 
 
 global_db_hook = sql_con()

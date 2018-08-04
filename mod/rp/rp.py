@@ -4,7 +4,7 @@ from asyncio import TimeoutError
 import discord
 from discord.ext import commands
 
-from permissions import chanop_only, check_chanop, is_chanop
+import permissions
 from messages import track
 from sql.sql import sql_cur, sql_con
 
@@ -105,7 +105,7 @@ class RPManager:
 
 
 	async def _generate_topic(self, region_meta):
-		return '{0} | {1} | STATUS: {2} | Managed RP Channel'.format(region_meta['name'], region_meta['description'], await self._decode_status(region_meta['status']))
+		return '{0} | {1} | STATUS: {2} | Managed by Hector'.format(region_meta['name'], region_meta['description'], await self._decode_status(region_meta['status']))
 
 
 	async def _refresh_region_meta(self, region_meta):
@@ -133,7 +133,7 @@ class RPManager:
 		await self._edit_region(region_meta)
 
 
-	async def _generate_region(self, guild, name="Unnamed Region", description="Use the ``describe`` command in this channel to edit the region description.", active_category=None, existing_channel=None):
+	async def _generate_region(self, guild, name="Unnamed Region", description="Use the ``describe`` command in this channel to edit the region description.", active_category=None, existing_channel=None, status_override=1):
 		new_region = None
 		if not existing_channel:
 			if not self._validate_name(guild, name):
@@ -141,7 +141,7 @@ class RPManager:
 			new_region = await guild.create_text_channel(name=self._sanitize_channel_name(name))
 		else:
 			new_region = existing_channel
-		region_meta = {'channel_id':new_region.id,'guild_id':guild.id,'name':name,'description':description,'status':1,'active_category':active_category}
+		region_meta = {'channel_id':new_region.id,'guild_id':guild.id,'name':name,'description':description,'status':status_override,'active_category':active_category}
 		await self._refresh_region_meta(region_meta)
 		return region_meta
 
@@ -156,12 +156,14 @@ class RPManager:
 
 	
 	@commands.group()
-	@chanop_only()
+	@permissions.require(permissions.manage)
 	async def rpset(self, ctx):
+		''' (Chanop-only) Change server settings related to the RP module '''
 		pass
 	
 	@rpset.command(name="inactive")
 	async def set_inactive(self, ctx):
+		''' Set the category where inactive region channels are stored '''
 		with sql_cur(self.db) as cur:
 			cur.execute('SELECT inactive_category FROM guild_settings WHERE guild_id=?;',(ctx.guild.id,))
 			if cur.fetchone():
@@ -172,6 +174,7 @@ class RPManager:
 		await ctx.message.add_reaction('✅')
 
 	@commands.command()
+	@permissions.require(permissions.p_open)
 	async def open(self, ctx, *location_raw):
 		''' Opens a region (chanops can use this to make new regions) '''
 		regions = await self._list_regions(ctx.guild.id)
@@ -195,7 +198,7 @@ class RPManager:
 			else:
 				final_region = region
 		elif len(regions_filtered) == 0:
-			if await is_chanop(ctx):
+			if await permissions.has_permission(ctx, permissions.create_new):
 				msg = await ctx.send('No region found. Press ✳️ within 10 seconds to create a new region.')
 				await msg.add_reaction('\u2733')
 
@@ -214,8 +217,9 @@ class RPManager:
 				else:
 					await msg.clear_reactions()
 					await msg.edit(content='Confirmed. Generating new region ``{0}`` (sanitized name ``#{1}``)...'.format(location, self._sanitize_channel_name(location)))
-					final_region = await self._generate_region(ctx.guild, location)
+					final_region = await self._generate_region(ctx.guild, location, active_category=ctx.message.channel.category_id, status_override=0)
 					final_region_chan = ctx.guild.get_channel(final_region['channel_id'])
+
 
 					await msg.edit(content='Successfully generated new region ``{0}``. Please drag the channel to the desired start category, then press ✳️. (5-minute timeout)'.format(location))
 					await msg.add_reaction('\u2733')
@@ -277,7 +281,7 @@ class RPManager:
 	
 
 	@commands.command(name='makeregion')
-	@chanop_only()
+	@permissions.require(permissions.convert)
 	async def make_region(self, ctx, *, name=None):
 		''' Converts an existing channel into a Hector region. '''
 		if not name:
@@ -292,7 +296,7 @@ class RPManager:
 		await ctx.message.add_reaction('✅')
 	
 	@commands.command(name='unregion')
-	@chanop_only()
+	@permissions.require(permissions.unmake)
 	async def unmake_region(self, ctx):
 		''' Removes Hector region status from the channel
 		  ' (Note: this does not delete the channel itself)
@@ -308,7 +312,7 @@ class RPManager:
 		await ctx.message.add_reaction('✅')
 	
 	@commands.command()
-	@chanop_only()
+	@permissions.require(permissions.move)
 	async def move(self, ctx, channel: discord.TextChannel=None):
 		''' Changes the category where an RP channel moves to when it is active. '''
 		if not channel:
@@ -344,8 +348,9 @@ class RPManager:
 			await track(msg, ctx.author)
 
 	@commands.command()
-	@chanop_only()
+	@permissions.require(permissions.describe)
 	async def describe(self, ctx, *, description):
+		''' Change the description for a region. '''
 		target_region = await self._get_region(ctx.guild.id, ctx.channel.id)
 		if not target_region:
 			raise commands.CheckFailure('Channel #{0} has no associate Region!'.format(ctx.channel.name))
@@ -371,6 +376,7 @@ class RPManager:
 
 	
 	@commands.command()
+	@permissions.require(permissions.close)
 	async def close(self, ctx, *location_raw):
 		''' Closes a region and moves it to the inactive category. '''
 		regions = await self._list_regions(ctx.guild.id)
