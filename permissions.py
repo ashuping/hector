@@ -322,7 +322,7 @@ class Permissions:
 		embed.set_thumbnail(url=user.avatar_url)
 		embed.set_footer(text='Permission bytes: 0b{0:016b}.'.format(perms))
 
-		if ctx.message.author.guild_permissions.administrator:
+		if user.guild_permissions.administrator:
 			embed.add_field(name='Guild Administrator',value='\u2705 Guild/server administrators bypass all permission checks. If {0} was not an administrator, their permissions would be as follows:'.format(user), inline=False)
 
 		for key,val in _perms_lut_unaliased.items():
