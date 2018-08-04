@@ -446,7 +446,7 @@ class RPManager:
 				num_processed = num_processed + 1
 				continue
 			to_check = tex + '{0:03d}| "{1}" id {2}\n'.format(num_processed,region['name'],region['channel_id'])
-			if len(to_check) > 100:
+			if len(to_check) > 1800:
 				tex = tex + '...[{0} more]({1}list +{2} for more)'.format(len(regions) - (num_processed), self.bot.command_prefix, num_processed)
 				break
 			else:
