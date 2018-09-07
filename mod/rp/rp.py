@@ -4,8 +4,8 @@ from asyncio import TimeoutError
 import discord
 from discord.ext import commands
 
-import permissions
-from messages import track
+import mod.core.permissions as permissions
+from mod.core.messages import track
 from sql.sql import sql_cur, sql_con
 
 class RPError(discord.ext.commands.CommandError):

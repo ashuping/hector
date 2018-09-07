@@ -76,6 +76,14 @@
 			{
 				"name" : "region_open_mode",
 				"type" : "INTEGER"
+			},
+			{
+				"name" : "hide_unauthorized",
+				"type" : "BOOLEAN"
+			},
+			{
+				"name" : "hide_unauthorized_inactive",
+				"type" : "BOOLEAN"
 			}
 		]
 	},
