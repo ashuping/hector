@@ -64,7 +64,7 @@ class Hectorbot_Core:
 					embed.add_field(name="Backtrace ({0} of {1}):".format(itr, total_itrs), value="```{0}```".format(full_backtrace), inline=False)
 					break
 		else:
-			embed.add_field(name='Press {expand}'.format(expand=CONSTANTS.REACTION_EXPAND), value='for full error backtrace'.format(new=CONSTANTS.REACTION_EXPAND), inline=False)
+			embed.add_field(name='Press {expand}'.format(expand=CONSTANTS.REACTION_EXPAND), value='for full error backtrace', inline=False)
 		
 		return embed
 				
