@@ -200,13 +200,13 @@ class Character:
 		if not char:
 			await ctx.send('No character "{c}" found.'.format(c=character))
 		else:
-			await _say_in_character(ctx, message, character, self.db)
+			await _say_in_character(ctx, character, message, self.db)
 
 	@commands.command()
 	async def sudo(self, ctx, user: discord.Member, *, message):
 		''' Impersonate another user '''
 		await ctx.send('Asked to say {m} as {u}.'.format(m=message, u=user))
-		await _say_in_character(ctx, message, {'name': user.name}, self.db)
+		await _say_in_character(ctx, {'name': user.name, 'id': 0}, message, self.db)
 
 	@commands.command()
 	async def hook(self, ctx, webhook_url):
@@ -302,9 +302,9 @@ class Character:
 
 		with sql_cur(self.db) as cur:
 			cur.execute('INSERT INTO character_favorites (character_id, user_id, ' +
-									'channel_id, guild_id)' +
-									'VALUES (?,?,?,?)' +
-									'ON CONFLICT (channel_id)' +
+									'channel_id, guild_id) ' +
+									'VALUES (?,?,?,?) ' +
+									'ON CONFLICT (channel_id) ' +
 									'DO UPDATE SET channel_id=EXCLUDED.channel_id, ' +
 									'guild_id=EXCLUDED.guild_id;',
 									(character['id'],
@@ -312,7 +312,6 @@ class Character:
 										ctx.channel.id,
 										ctx.guild.id))
 		await ctx.message.add_reaction(CONSTANTS.REACTION_CHECK)
-
 
 	@character.command()
 	async def transfer(self, ctx, char_name, new_owner: discord.Member):
