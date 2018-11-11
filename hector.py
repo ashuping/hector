@@ -102,11 +102,6 @@ class Hectorbot_Core:
 				cur.execute('INSERT INTO error_messages (message_id, channel_id, command_name, error_name, error_text, full_backtrace, full_command_string) VALUES (?,?,?,?,?,?,?);',(msg.id, msg.channel.id, ctx.command.name, str(type(error)), str(error), bt_string, ctx.message.content))
 	
 	async def on_message(self, message):
-		if 'scp-1360' in message.content.lower() or 'scp 1360' in message.content.lower():
-			if message.author.id == self.bot.user.id:
-				return
-			msg = await message.channel.send('*((I have a name, you know.))*')
-			await track(msg, message.author)
 		if message.author.id != self.bot.user.id and self.bot.user in message.mentions:
 			chan = message.channel
 			my_message = await chan.send('Use ``{0}help`` for a list of commands. (press 🚮 to remove)'.format(bot_prefix))
