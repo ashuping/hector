@@ -200,7 +200,7 @@ class Character:
 		if not char:
 			await ctx.send('No character "{c}" found.'.format(c=character))
 		else:
-			await _say_in_character(ctx, character, message, self.db)
+			await _say_in_character(ctx, char, message, self.db)
 
 	@commands.command()
 	async def sudo(self, ctx, user: discord.Member, *, message):
