@@ -98,9 +98,9 @@ def _fetch_preferred_character_for_channel(
 	for char in res:
 		if char[1] == channel.id:  # Prefer channel favorites
 			channel_favorite = char[0]
-		elif char[2] == guild.id:  # Fall back to guild favorites
+		elif char[2] == guild.id and char[1] == 0:  # Fall back to guild favorites
 			guild_favorite = char[0]
-		else:  # Least preferred are global favorites
+		elif char[1] == 0 and char[2] == 0:  # Least preferred are global favorites
 			global_favorite = char[0]
 
 	if strict:
@@ -193,13 +193,18 @@ class Character:
 				'to set your preferred character.',
 				color=CONSTANTS.EMBED_COLOR_ERROR)
 		else:
-			await message.delete()
-			await _say_in_character_raw(
-				message.channel,
-				message.guild,
-				char_to_use,
-				message.content,
-				self.db)
+			try:
+				await _say_in_character_raw(
+					message.channel,
+					message.guild,
+					char_to_use,
+					message.content,
+					self.db)
+			except commands.BadArgument as err:
+				await message.channel.send(str(err))
+				raise err
+			else:
+				await message.delete()
 
 	@commands.command()
 	async def sayas(self, ctx, character, *, message):
