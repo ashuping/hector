@@ -175,7 +175,7 @@
 			},
 			{
 				"name" : "channel_id",
-				"type" : "BIGINT PRIMARY KEY"
+				"type" : "BIGINT"
 			},
 			{
 				"name" : "guild_id",

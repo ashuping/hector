@@ -78,7 +78,8 @@ def _fetch_preferred_character_for_channel(
 	user: discord.Member,
 	channel: discord.TextChannel,
 	guild: discord.Guild,
-	db):
+	db,
+	strict=False):
 	''' Gets an appropriate character, based on the user's favorites '''
 	res = None
 
@@ -102,14 +103,22 @@ def _fetch_preferred_character_for_channel(
 		else:  # Least preferred are global favorites
 			global_favorite = char[0]
 
+	if strict:
+		if channel_favorite:
+			return _fetch_character_by_id(channel_favorite, db)
+
+		return None
+
 	if channel_favorite:
 		return _fetch_character_by_id(channel_favorite, db)
-	elif guild_favorite:
+
+	if guild_favorite:
 		return _fetch_character_by_id(guild_favorite, db)
-	elif global_favorite:
+
+	if global_favorite:
 		return _fetch_character_by_id(global_favorite, db)
-	else:
-		return None
+
+	return None
 
 
 async def _say_in_character(ctx, char, message, db, embed=None):
@@ -179,7 +188,7 @@ class Character:
 					c=message.channel.name,
 					g=message.guild.name) +
 				'but you haven\'t set a favorite character yet. Try running ' +
-				'`{p}favorite <name>` in the channel '.format(
+				'`{p}character favorite <name>` in the channel '.format(
 					p=self.bot.command_prefix) +
 				'to set your preferred character.',
 				color=CONSTANTS.EMBED_COLOR_ERROR)
@@ -208,6 +217,7 @@ class Character:
 		''' Impersonate another user '''
 		await ctx.send('Asked to say {m} as {u}.'.format(m=message, u=user))
 		await _say_in_character(ctx, {'name': user.name, 'id': 0}, message, self.db)
+		await ctx.message.delete()
 
 	@commands.command()
 	async def hook(self, ctx, webhook_url):
@@ -301,17 +311,30 @@ class Character:
 			character_name,
 			self.db)
 
+		previous_char = _fetch_preferred_character_for_channel(
+			ctx.message.author,
+			ctx.channel,
+			ctx.guild,
+			self.db,
+			strict=True)
+
 		with sql_cur(self.db) as cur:
-			cur.execute('INSERT INTO character_favorites (character_id, user_id, ' +
-									'channel_id, guild_id) ' +
-									'VALUES (?,?,?,?) ' +
-									'ON CONFLICT (channel_id) ' +
-									'DO UPDATE SET channel_id=EXCLUDED.channel_id, ' +
-									'guild_id=EXCLUDED.guild_id;',
-									(character['id'],
-										ctx.message.author.id,
-										ctx.channel.id,
-										ctx.guild.id))
+			if previous_char:
+				cur.execute('UPDATE character_favorites ' +
+										'SET channel_id=? ' +
+										'WHERE character_id=? AND user_id=?;',
+										(ctx.channel.id,
+											character['id'],
+											ctx.message.author.id))
+			else:
+				cur.execute('INSERT INTO character_favorites (character_id, user_id, ' +
+										'channel_id, guild_id) ' +
+										'VALUES (?,?,?,?);',
+										(character['id'],
+											ctx.message.author.id,
+											ctx.channel.id,
+											ctx.guild.id))
+
 		await ctx.message.add_reaction(CONSTANTS.REACTION_CHECK)
 
 	@character.command()
