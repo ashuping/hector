@@ -181,7 +181,7 @@ class Permissions:
 
 			self._perms_set(ctx.guild.id, role.id, extant_permissions, mode=mode)
 
-			await ctx.message.add_reaction('✅')
+			await ctx.message.add_reaction(CONSTANTS.REACTION_CHECK)
 
 	@perms.command()
 	async def grant(self, ctx, role: Role, *permission_names):

@@ -18,3 +18,4 @@ REACTION_DENY      = '\u26d4'     #
 REACTION_ERROR     = '\u26a0'     # 
 REACTION_NOT_FOUND = '\u2139'     # Same as REACTION_INFO
 REACTION_INFO      = '\u2139'     # Same as REACTION_NOT_FOUND
+REACTION_CHECK     = '\u2705'     # 

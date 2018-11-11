@@ -112,6 +112,8 @@ class sql_con:
 					match = False
 					for col_descriptor in table['schema']:
 						if col_descriptor['name'] == column[0]:
+							if 'PRIMARY KEY' in col_descriptor['type']:
+								column[1] = column[1] + ' PRIMARY KEY'
 							if col_descriptor['type'].lower() == column[1].lower():
 								match = True
 								break

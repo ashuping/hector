@@ -119,5 +119,68 @@
 					"type" : "TEXT"
 				}
 		]
+	},
+	{
+		"name" : "webhooks",
+		"schema" : [
+			{
+				"name" : "guild_id", 
+				"type" : "BIGINT"
+			},
+			{
+				"name" : "channel_id",
+				"type" : "BIGINT PRIMARY KEY"
+			},
+			{
+				"name" : "webhook_url",
+				"type" : "TEXT"
+			}
+		]
+	},
+	{
+		"name" : "characters",
+		"schema" : [
+			{
+				"name" : "character_id",
+				"type" : "BIGINT PRIMARY KEY"
+			},
+			{
+				"name" : "owner_id",
+				"type" : "BIGINT"
+			},
+			{
+				"name" : "name",
+				"type" : "TEXT"
+			},
+			{
+				"name" : "description",
+				"type" : "TEXT"
+			},
+			{
+				"name" : "icon_url",
+				"type" : "TEXT"
+			}
+		]
+	},
+	{
+		"name" : "character_favorites",
+		"schema" : [
+			{
+				"name" : "character_id",
+				"type" : "BIGINT"
+			},
+			{
+				"name" : "user_id",
+				"type" : "BIGINT"
+			},
+			{
+				"name" : "channel_id",
+				"type" : "BIGINT PRIMARY KEY"
+			},
+			{
+				"name" : "guild_id",
+				"type" : "BIGINT"
+			}
+		]
 	}
 ]

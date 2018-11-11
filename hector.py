@@ -184,10 +184,11 @@ global_db_hook = sql_con()
 hector_bot = commands.Bot(command_prefix=bot_prefix, description=bot_desc)
 hector_bot.add_cog(Hectorbot_Core(hector_bot, global_db_hook))
 
-extensions = [ \
-	'mod.core.messages',\
-	'mod.core.permissions',\
-	'mod.rp.rp'
+extensions = [ 
+	'mod.core.messages',
+	'mod.core.permissions',
+	'mod.rp.rp',
+	'mod.rp.character'
 ]
 
 for extension in extensions:
