@@ -326,10 +326,10 @@ class Character:
 		with sql_cur(self.db) as cur:
 			if previous_char:
 				cur.execute('UPDATE character_favorites ' +
-										'SET channel_id=? ' +
-										'WHERE character_id=? AND user_id=?;',
-										(ctx.channel.id,
-											character['id'],
+										'SET character_id=? ' +
+										'WHERE channel_id=? AND user_id=?;',
+										(character['id'],
+											ctx.channel.id,
 											ctx.message.author.id))
 			else:
 				cur.execute('INSERT INTO character_favorites (character_id, user_id, ' +
