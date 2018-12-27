@@ -92,6 +92,9 @@ class DieRoll:
 						er=str(e)),
 					color=CONSTANTS.EMBED_COLOR_ERROR)
 
+		if not results:
+			return
+
 		desc = ''
 		for res in results:
 			desc = desc + ('\n' +
