@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from sql.sql import sql_cur, sql_con
 import mod.core.CONSTANTS as CONSTANTS
-from mod.core.prompt import prompt_user, prompt_user_raw
+from mod.core.prompt import prompt_user_raw
 from mod.rp.rp import RPError, RPManager
 
 
@@ -17,9 +17,9 @@ class AmbiguousCharacter(RPError):
 	pass
 
 
-def _fetch_character_by_name(user, character_name, db):
+def _fetch_character_by_name(user, character_name, dtb):
 	''' Attempts to find a character by the given name '''
-	with sql_cur(db) as cur:
+	with sql_cur(dtb) as cur:
 		res = cur.execute('SELECT character_id, name, description, icon_url ' +
 											'FROM characters ' +
 											'WHERE owner_id=? AND LOWER(name)=LOWER(?);',
@@ -39,9 +39,9 @@ def _fetch_character_by_name(user, character_name, db):
 		}
 
 
-def _fetch_character_by_id(character_id, db):
+def _fetch_character_by_id(character_id, dtb):
 	''' Attempts to find a character with the given id '''
-	with sql_cur(db) as cur:
+	with sql_cur(dtb) as cur:
 		res = cur.execute('SELECT character_id, name, description, icon_url ' +
 											'FROM characters ' +
 											'WHERE character_id=?;',
@@ -58,13 +58,12 @@ def _fetch_character_by_id(character_id, db):
 	}
 
 
-
 def _fetch_webhook_for_channel(
 	channel: discord.TextChannel,
 	guild: discord.Guild,
-	db):
+	dtb):
 	''' Fetches a webhook for a given channel '''
-	with sql_cur(db) as cur:
+	with sql_cur(dtb) as cur:
 		res = cur.execute('SELECT webhook_url FROM webhooks ' +
 											'WHERE guild_id=? AND channel_id=?;',
 											(guild.id, channel.id)).fetchone()
@@ -78,12 +77,12 @@ def _fetch_preferred_character_for_channel(
 	user: discord.Member,
 	channel: discord.TextChannel,
 	guild: discord.Guild,
-	db,
+	dtb,
 	strict=False):
 	''' Gets an appropriate character, based on the user's favorites '''
 	res = None
 
-	with sql_cur(db) as cur:
+	with sql_cur(dtb) as cur:
 		res = cur.execute('SELECT character_id, channel_id, guild_id ' +
 											'FROM character_favorites ' +
 											'WHERE user_id=?;', (user.id,)).fetchall()
@@ -105,29 +104,36 @@ def _fetch_preferred_character_for_channel(
 
 	if strict:
 		if channel_favorite:
-			return _fetch_character_by_id(channel_favorite, db)
+			return _fetch_character_by_id(channel_favorite, dtb)
 
 		return None
 
 	if channel_favorite:
-		return _fetch_character_by_id(channel_favorite, db)
+		return _fetch_character_by_id(channel_favorite, dtb)
 
 	if guild_favorite:
-		return _fetch_character_by_id(guild_favorite, db)
+		return _fetch_character_by_id(guild_favorite, dtb)
 
 	if global_favorite:
-		return _fetch_character_by_id(global_favorite, db)
+		return _fetch_character_by_id(global_favorite, dtb)
 
 	return None
 
 
-async def _say_in_character(ctx, char, message, db, embed=None):
+async def _say_in_character(ctx, char, message, dtb, embed=None):
 	''' Says something in character '''
-	await _say_in_character_raw(ctx.channel, ctx.guild, char, message, db, embed)
+	await _say_in_character_raw(ctx.channel, ctx.guild, char, message, dtb, embed)
 
-async def _say_in_character_raw(channel, guild, char, message, db, embed=None):
+
+async def _say_in_character_raw(
+	channel,
+	guild,
+	char,
+	message,
+	dtb,
+	embed=None):
 	''' Says something in character '''
-	hook_url = _fetch_webhook_for_channel(channel, guild, db)
+	hook_url = _fetch_webhook_for_channel(channel, guild, dtb)
 
 	if not hook_url:
 		raise commands.BadArgument('No webhook for this channel. ' +
@@ -148,9 +154,9 @@ async def _say_in_character_raw(channel, guild, char, message, db, embed=None):
 
 class Character:
 	''' Commands for speaking in-character '''
-	def __init__(self, bot, db_handle):
+	def __init__(self, bot, dtb_handle):
 		self.bot = bot
-		self.db = db_handle
+		self.dtb = dtb_handle
 
 	async def on_message(self, message):
 		''' Auto-in-character '''
@@ -162,8 +168,8 @@ class Character:
 			return  # only auto-char if the message doesn't start with a special char
 			#       # (that way, we don't interfere with bot commands, OOC, etc.
 
-		r = RPManager(self.bot, self.db)
-		region = await r._get_region(message.guild.id, message.channel.id)
+		rpm = RPManager(self.bot, self.dtb)
+		region = await rpm._get_region(message.guild.id, message.channel.id)
 		if not region:  # only auto-char in regions
 			return
 
@@ -174,7 +180,7 @@ class Character:
 			message.author,
 			message.channel,
 			message.guild,
-			self.db)
+			self.dtb)
 
 		if not char_to_use:
 			dm_channel = message.author.dm_channel
@@ -199,7 +205,7 @@ class Character:
 					message.guild,
 					char_to_use,
 					message.content,
-					self.db)
+					self.dtb)
 			except commands.BadArgument as err:
 				await message.channel.send(str(err))
 				raise err
@@ -209,25 +215,25 @@ class Character:
 	@commands.command()
 	async def sayas(self, ctx, character, *, message):
 		''' Say something in-character '''
-		char = _fetch_character_by_name(ctx.message.author, character, self.db)
+		char = _fetch_character_by_name(ctx.message.author, character, self.dtb)
 
 		if not char:
 			await ctx.send('No character "{c}" found.'.format(c=character))
 		else:
-			await _say_in_character(ctx, char, message, self.db)
+			await _say_in_character(ctx, char, message, self.dtb)
 			await ctx.message.delete()
 
 	@commands.command()
 	async def sudo(self, ctx, user: discord.Member, *, message):
 		''' Impersonate another user '''
 		await ctx.send('Asked to say {m} as {u}.'.format(m=message, u=user))
-		await _say_in_character(ctx, {'name': user.name, 'id': 0}, message, self.db)
+		await _say_in_character(ctx, {'name': user.name, 'id': 0}, message, self.dtb)
 		await ctx.message.delete()
 
 	@commands.command()
 	async def hook(self, ctx, webhook_url):
 		''' Set the webhook URL for a channel '''
-		with sql_cur(self.db) as cur:
+		with sql_cur(self.dtb) as cur:
 			cur.execute('INSERT INTO webhooks (guild_id, channel_id, webhook_url)' +
 									'VALUES (?,?,?)' +
 									'ON CONFLICT (channel_id)' +
@@ -244,7 +250,7 @@ class Character:
 	@character.command()
 	async def add(self, ctx, *, name):
 		''' Adds a new character '''
-		with sql_cur(self.db) as cur:
+		with sql_cur(self.dtb) as cur:
 			cur.execute('INSERT INTO characters (character_id, owner_id, name, ' +
 									'description, icon_url) ' +
 									'VALUES (?,?,?,?,?)',
@@ -260,9 +266,9 @@ class Character:
 	@character.command()
 	async def describe(self, ctx, char_name, *, description):
 		''' Adds a description to a character '''
-		char = _fetch_character_by_name(ctx.message.author, char_name, self.db)
+		char = _fetch_character_by_name(ctx.message.author, char_name, self.dtb)
 
-		with sql_cur(self.db) as cur:
+		with sql_cur(self.dtb) as cur:
 			cur.execute('UPDATE characters ' +
 									'SET description=? ' +
 									'WHERE character_id=?;',
@@ -273,9 +279,9 @@ class Character:
 	@character.command()
 	async def icon(self, ctx, char_name, icon_url):
 		''' Sets the avatar icon for a character '''
-		char = _fetch_character_by_name(ctx.message.author, char_name, self.db)
+		char = _fetch_character_by_name(ctx.message.author, char_name, self.dtb)
 
-		with sql_cur(self.db) as cur:
+		with sql_cur(self.dtb) as cur:
 			cur.execute('UPDATE characters ' +
 									'SET icon_url=? ' +
 									'WHERE character_id=?;',
@@ -289,7 +295,7 @@ class Character:
 		if not user:
 			user = ctx.message.author
 
-		with sql_cur(self.db) as cur:
+		with sql_cur(self.dtb) as cur:
 			res = cur.execute('SELECT character_id, name, description ' +
 												'FROM characters ' +
 												'WHERE owner_id=?;',
@@ -314,16 +320,16 @@ class Character:
 		character = _fetch_character_by_name(
 			ctx.message.author,
 			character_name,
-			self.db)
+			self.dtb)
 
 		previous_char = _fetch_preferred_character_for_channel(
 			ctx.message.author,
 			ctx.channel,
 			ctx.guild,
-			self.db,
+			self.dtb,
 			strict=True)
 
-		with sql_cur(self.db) as cur:
+		with sql_cur(self.dtb) as cur:
 			if previous_char:
 				cur.execute('UPDATE character_favorites ' +
 										'SET character_id=? ' +
@@ -345,9 +351,9 @@ class Character:
 	@character.command()
 	async def transfer(self, ctx, char_name, new_owner: discord.Member):
 		''' Transfers a character to a new owner '''
-		char = _fetch_character_by_name(ctx.message.author, char_name, self.db)
+		char = _fetch_character_by_name(ctx.message.author, char_name, self.dtb)
 
-		with sql_cur(self.db) as cur:
+		with sql_cur(self.dtb) as cur:
 			cur.execute('UPDATE characters ' +
 									'SET owner_id=? ' +
 									'WHERE character_id=?;',

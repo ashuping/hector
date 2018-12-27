@@ -104,7 +104,7 @@ class Hectorbot_Core:
 	async def on_message(self, message):
 		if message.author.id != self.bot.user.id and self.bot.user in message.mentions:
 			chan = message.channel
-			my_message = await chan.send('Use ``{0}help`` for a list of commands. (press 🚮 to remove)'.format(bot_prefix))
+			my_message = await chan.send('Use ``{0}help`` for a list of commands. (press {expand} to remove)'.format(bot_prefix, expand=CONSTANTS.REACTION_DELETE))
 			await track(my_message, message.author)
 
 	async def on_raw_reaction_add(self, payload):
@@ -183,7 +183,8 @@ extensions = [
 	'mod.core.messages',
 	'mod.core.permissions',
 	'mod.rp.rp',
-	'mod.rp.character'
+	'mod.rp.character',
+	'mod.roll.roll'
 ]
 
 for extension in extensions:
