@@ -1,5 +1,6 @@
 ''' Parses mathematical expressions with die rolls '''
 
+import math
 import random
 
 KEYWORDS = ['+', '-', '*', '/', '(', ')', '[[', ']]', '$']
@@ -204,10 +205,16 @@ class DieExpression:
 		self.rhs = Expression(rside)
 	
 	def run(self, vvals):
-		lval = self.lhs.run(vvals) # First, run any sub-expressions so that
-		rval = self.rhs.run(vvals) # we have numbers for lval and rval
+		lval = self.lhs.run(vvals)  # First, run any sub-expressions so that
+		rval = self.rhs.run(vvals)  # we have numbers for lval and rval
+
+		if rval == 1:
+			return lval
+
+		lval = math.floor(lval)  # Truncate any decimal expressions
+		rval = math.floor(rval)  # unless the rval is 1.
 		i = 0
-		for dex in range(lval): # Then, roll each die individually and sum
+		for dex in range(lval):  # Then, roll each die individually and sum
 			i = i + random.randrange(rval) + 1
 
 		return i
@@ -224,7 +231,7 @@ class ConstExpression:
 	
 	def compile(self, stringExpression):
 		try:
-			self.val = int(stringExpression)
+			self.val = float(stringExpression)
 		except ValueError:
 			raise ExpressionSyntaxError('In constant expression "' \
 				+ stringExpression + '": Not a constant!')
