@@ -305,14 +305,24 @@ class Character:
 			await ctx.send('No characters found for {u}.'.format(u=user.name))
 
 		else:
+			msgs = []
 			lst = 'Characters for {u}:'.format(u=user.name)
 			for char in res:
-				lst = lst + '\n[{cid}] - **{name}** - *{desc}*'.format(
+				lst_next = '\n[{cid}] - **{name}** - *{desc}*'.format(
 					cid=char[0],
 					name=char[1],
 					desc=char[2])
 
-			await ctx.send(lst)
+				if len(lst + lst_next) > 2000:
+					msgs.append(lst)
+					lst = lst_next
+				else:
+					lst += lst_next
+
+			if len(lst.strip()) > 0:
+				msgs.append(lst)
+			for msg in msgs:
+				await ctx.send(msg)
 
 	@character.command()
 	async def favorite(self, ctx, character_name):
