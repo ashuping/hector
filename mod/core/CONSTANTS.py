@@ -1,5 +1,5 @@
 # Misc
-ERROR_REPORT_URL = 'https://github.com/alexandershuping/hector'
+ERROR_REPORT_URL = 'https://github.com/ashuping/hector'
 
 
 # Embed colors
