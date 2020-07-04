@@ -152,16 +152,25 @@ class RPManager(commands.Cog):
 		await self._edit_region(region_meta)
 
 
-	async def _generate_region(self, guild, name="Unnamed Region", description="Use {0}describe in this channel to edit the region description.".format(self.bot.command_prefix), active_category=None, existing_channel=None, status_override=1):
+	async def _generate_region(self, guild, name="Unnamed Region", description=None, active_category=None, existing_channel=None, status_override=1):
+		if not description:
+			description = "Use {0}describe in this channel to edit the region description.".format(self.bot.command_prefix)
 		new_region = None
 		update_necessary = False
 		if not existing_channel:
 			if not self._validate_name(guild, name):
 				raise commands.BadArgument('Channel name is not valid, or another channel with that name already exists.')
+
+
+			active_category_obj = None
+			for category in guild.categories:
+				if category.id == active_category:
+					active_category_obj = category
+
 			new_region = await guild.create_text_channel(
 				name=self._sanitize_channel_name(name),
-				topic=self._generate_topic({'name':name, 'description':description}),
-				category=active_category,
+				topic=await self._generate_topic({'name':name, 'description':description}),
+				category=active_category_obj,
 				reason='Creating new region "{0}"'.format(name)
 			)
 		else:
