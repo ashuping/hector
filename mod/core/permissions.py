@@ -94,7 +94,7 @@ def _perms_combine(high_priority, low_priority):
 	
 	return final_perm
 
-class Permissions:
+class Permissions(commands.Cog):
 	''' Manages user permissions '''
 	def __init__(self, bot):
 		self.bot = bot

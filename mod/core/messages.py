@@ -1,12 +1,16 @@
+from discord.ext import commands
+
 import mod.core.CONSTANTS as CONSTANTS
 from sql.sql import sql_cur, sql_con
 
-class MessageManager:
+class MessageManager(commands.Cog):
 	def __init__(self, bot, db):
 		self.bot = bot
 		self.db = db
 	
+	@commands.Cog.listener()
 	async def on_raw_reaction_add(self, payload):
+		print('found on_raw_reaction_add')
 		if payload.user_id == self.bot.user.id:
 			return
 		if payload.emoji.name == CONSTANTS.REACTION_DELETE:
@@ -23,7 +27,7 @@ class MessageManager:
 				reacting_member = self.bot.get_guild(payload.guild_id).get_member(payload.user_id)
 				can_delete = self.bot.get_channel(payload.channel_id).permissions_for(reacting_member).manage_messages
 				if payload.user_id == sender_uid or can_delete:
-					relevant_message = await self.bot.get_channel(payload.channel_id).get_message(payload.message_id)
+					relevant_message = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
 					await relevant_message.delete()
 	
 

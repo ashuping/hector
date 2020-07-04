@@ -116,13 +116,10 @@ Once Hector has joined your server, the following steps are requried for setup:
 1) All users can run `|list` to view a list of regions.
 
 ## Host an Instance
-To host an instance of Hector, you need a system with Python 3.6 or higher. Installation is as follows:
-1) Clone the rewrite branch of the [discord.py](https://github.com/Rapptz/discord.py) library into a folder
-1) Switch to the rewrite branch with `git checkout rewrite`
-1) Build with `python3 -m pip install -U .`
-1) You may need to install additional libraries if the above step fails. Check the [discord.py](https://github.com/Rapptz/discord.py) repository for more detailed instructions on building discord.py
+To host an instance of Hector, you need a system with Python 3.8 or higher. Importantly, **you also need libsqlite3 version 3.24.0 or higher**. Installation is as follows:
 1) Clone this repository into its own folder
+1) Install required modules with `python3.8 -m pip install -r requirements`
 1) Rename the file `bot_info.json.skel` to `.bot_info.json`
 1) In the file `.bot_info.json`, replace the text `INSERT YOUR BOT TOKEN HERE!` with your bot token
 1) Optionally, change the bot description or command prefix to your liking
-1) Start Hector with `python3 hector.py`
+1) Start Hector with `python3.8 hector.py`

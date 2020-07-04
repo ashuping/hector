@@ -152,12 +152,13 @@ async def _say_in_character_raw(
 			await hook.send(message, username=char['name'], embed=embed)
 
 
-class Character:
+class Character(commands.Cog):
 	''' Commands for speaking in-character '''
 	def __init__(self, bot, dtb_handle):
 		self.bot = bot
 		self.dtb = dtb_handle
 
+	@commands.Cog.listener()
 	async def on_message(self, message):
 		''' Auto-in-character '''
 		if message.author.bot:
@@ -235,9 +236,9 @@ class Character:
 		''' Set the webhook URL for a channel '''
 		with sql_cur(self.dtb) as cur:
 			cur.execute('INSERT INTO webhooks (guild_id, channel_id, webhook_url)' +
-									'VALUES (?,?,?)' +
-									'ON CONFLICT (channel_id)' +
-									'DO UPDATE SET webhook_url=EXCLUDED.webhook_url;',
+									' VALUES (?,?,?)' +
+									' ON CONFLICT (channel_id)' +
+									' DO UPDATE SET webhook_url=EXCLUDED.webhook_url;',
 									(ctx.guild.id, ctx.channel.id, webhook_url))
 		await ctx.message.add_reaction(CONSTANTS.REACTION_CHECK)
 

@@ -14,7 +14,7 @@ class RPError(discord.ext.commands.CommandError):
 class InvalidRegionError(RPError):
 	pass
 
-class RPManager:
+class RPManager(commands.Cog):
 	''' RP channel management '''
 	def __init__(self, bot, db_handle):
 		self.bot = bot

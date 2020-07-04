@@ -25,18 +25,14 @@ bot_prefix = settings['command_prefix']
 bot_desc = settings['description']
 bot_token = settings['token']
 
-class Hectorbot_Core:
+client = discord.Client()
+hector_bot = commands.Bot(command_prefix=bot_prefix, description=bot_desc)
+
+class Hectorbot_Core(commands.Cog):
 	''' Basic functionality '''
 	def __init__(self, bot, db_hook):
 		self.bot = bot
 		self.db = db_hook
-
-	
-	@commands.command()
-	async def zyn(self, ctx):
-		''' Marp. '''
-		msg = await ctx.send('Marp.')
-		await track(msg, ctx.author)
 
 	
 	@commands.command()
@@ -76,6 +72,7 @@ class Hectorbot_Core:
 
 		return embed
 
+	@commands.Cog.listener()
 	async def on_command_error(self, ctx, error):
 		if type(error) == discord.ext.commands.MissingPermissions:
 			await ctx.message.add_reaction(CONSTANTS.REACTION_DENY)
@@ -101,12 +98,14 @@ class Hectorbot_Core:
 				print('Hector encountered an error:\n{0}'.format(bt_string))
 				cur.execute('INSERT INTO error_messages (message_id, channel_id, command_name, error_name, error_text, full_backtrace, full_command_string) VALUES (?,?,?,?,?,?,?);',(msg.id, msg.channel.id, ctx.command.name, str(type(error)), str(error), bt_string, ctx.message.content))
 	
+	@commands.Cog.listener()
 	async def on_message(self, message):
 		if message.author.id != self.bot.user.id and self.bot.user in message.mentions:
 			chan = message.channel
 			my_message = await chan.send('Use ``{0}help`` for a list of commands. (press {expand} to remove)'.format(bot_prefix, expand=CONSTANTS.REACTION_DELETE))
 			await track(my_message, message.author)
 
+	@commands.Cog.listener()
 	async def on_raw_reaction_add(self, payload):
 		if payload.user_id == self.bot.user.id:
 			return
@@ -118,11 +117,11 @@ class Hectorbot_Core:
 			if not row:
 				return
 
-			to_edit = await self.bot.get_channel(payload.channel_id).get_message(payload.message_id)
+			to_edit = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
 			new_embed = self._construct_error_embed(row[0],row[1],row[2],row[3],row[4])
 			await to_edit.edit(content='{err} Command error {err}'.format(err=CONSTANTS.REACTION_ERROR),embed=new_embed)
 	
-
+	@commands.Cog.listener()
 	async def on_raw_reaction_remove(self, payload):
 		if payload.user_id == self.bot.user.id:
 			return
@@ -134,19 +133,18 @@ class Hectorbot_Core:
 			if not row:
 				return
 
-			to_edit = await self.bot.get_channel(payload.channel_id).get_message(payload.message_id)
+			to_edit = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
 			new_embed = self._construct_error_embed(row[0],row[1],row[2],row[3])
-			await to_edit.edit(content='{err} Command error {err}'.format(err=CONSTANTS.REACTION_ERROR),embed=new_embed)
-	
-				
+			await to_edit.edit(content='{err} Command error {err}'.format(err=CONSTANTS.REACTION_ERROR),embed=new_embed)	
 
-	
+	@commands.Cog.listener()
 	async def on_ready(self):
 		global bot_url
 		processed_url = bot_url.format(self.bot.user.id)
 		print('Hector is active. \nUser info: {0}\nInvite URL: {1}'.format(self.bot.user, processed_url))
 		await self.bot.change_presence(activity=discord.Game(name='among the twisted pines.'))
 	
+	@commands.Cog.listener()
 	async def on_command_completion(self, ctx):
 		if ctx.command.name == 'help':
 			async for msg in ctx.history(limit=10):
@@ -176,7 +174,6 @@ class Hectorbot_Core:
 
 global_db_hook = sql_con()
 
-hector_bot = commands.Bot(command_prefix=bot_prefix, description=bot_desc)
 hector_bot.add_cog(Hectorbot_Core(hector_bot, global_db_hook))
 
 extensions = [ 

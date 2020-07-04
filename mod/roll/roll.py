@@ -10,12 +10,13 @@ from mod.core.prompt import prompt_user_raw
 from mod.roll.expressions import Expression, find_first_of,\
 	ExpressionSyntaxError, ExpressionVariableError
 
-class DieRoll:
+class DieRoll(commands.Cog):
 	''' Handle die rolls '''
 	def __init__(self, bot, db):
 		self.bot = bot
 		self.db = db
 
+	@commands.Cog.listener()
 	async def on_message(self, message):
 		''' Parse all expressions '''
 		if message.author.bot:
