@@ -105,15 +105,15 @@ class RPManager(commands.Cog):
 
 
 	async def _generate_topic(self, region_meta):
-		return '{0} | {1} | STATUS: {2} | Managed by Hector'.format(region_meta['name'], region_meta['description'], await self._decode_status(region_meta['status']))
+		return '{0} | {1} | Managed by Hector'.format(region_meta['name'], region_meta['description'])
 
 
-	async def _refresh_region_meta(self, region_meta):
+	async def _refresh_region_meta(self, region_meta, deep_update=False):
 		region = self.bot.get_channel(region_meta['channel_id'])
 		if not region:
 			with sql_cur(self.db) as cur:
 				cur.execute('DELETE FROM regions WHERE channel_id=?',(region_meta['channel_id'],))
-				raise commands.CheckFailure('Channel for region {0} is missing! Removed associated region data.')
+				raise commands.CheckFailure('Channel for region {0} is missing! Removed associated region data.'.format(region_meta['name']))
 		channel_category_id = None
 		if region_meta['status'] != 1:
 			channel_category_id = region_meta['active_category']
@@ -129,20 +129,50 @@ class RPManager(commands.Cog):
 			if category.id == channel_category_id:
 				channel_category = category
 
-		await region.edit(name=self._sanitize_channel_name(region_meta['name']), position=0, nsfw=region.is_nsfw(), topic=await self._generate_topic(region_meta), sync_permissions=True, category=channel_category, reason='Updating RP region metadata.')
+		if deep_update:
+			''' Channel name and description updates are rate-limited to 2 per 
+			    10 minutes, so we need to avoid touching those unless it's 
+				unavoidable.
+			''' 
+			await region.edit(
+				name=self._sanitize_channel_name(region_meta['name']),
+				position=0,
+				topic=await self._generate_topic(region_meta),
+				sync_permissions=True,
+				category=channel_category,
+				reason='Fully updating RP region metadata.'
+			)
+		else:
+			await region.edit(
+				position=0,
+				sync_permissions=True,
+				category=channel_category,
+				reason='Updating RP region metadata.'
+			)
 		await self._edit_region(region_meta)
 
 
-	async def _generate_region(self, guild, name="Unnamed Region", description="Use the ``describe`` command in this channel to edit the region description.", active_category=None, existing_channel=None, status_override=1):
+	async def _generate_region(self, guild, name="Unnamed Region", description="Use {0}describe in this channel to edit the region description.".format(self.bot.command_prefix), active_category=None, existing_channel=None, status_override=1):
 		new_region = None
+		update_necessary = False
 		if not existing_channel:
 			if not self._validate_name(guild, name):
 				raise commands.BadArgument('Channel name is not valid, or another channel with that name already exists.')
-			new_region = await guild.create_text_channel(name=self._sanitize_channel_name(name))
+			new_region = await guild.create_text_channel(
+				name=self._sanitize_channel_name(name),
+				topic=self._generate_topic({'name':name, 'description':description}),
+				category=active_category,
+				reason='Creating new region "{0}"'.format(name)
+			)
 		else:
 			new_region = existing_channel
+			update_necessary = True
+			
 		region_meta = {'channel_id':new_region.id,'guild_id':guild.id,'name':name,'description':description,'status':status_override,'active_category':active_category}
-		await self._refresh_region_meta(region_meta)
+		
+		if update_necessary:
+			await self._refresh_region_meta(region_meta, deep_update=True)
+
 		return region_meta
 
 
@@ -357,13 +387,13 @@ class RPManager(commands.Cog):
 
 		target_region['description'] = str(description)
 
-		await self._refresh_region_meta(target_region)
+		await self._refresh_region_meta(target_region, deep_update=True)
 		await ctx.message.add_reaction('✅')
 	
 
 	@commands.command()
 	async def fix(self, ctx, channel: discord.TextChannel = None):
-		''' Updates a location's channel (i.e. category, permissions, etc.) '''
+		''' Update a location's channel (i.e. category, permissions, etc.) '''
 		if not channel:
 			channel = ctx.channel
 
@@ -371,14 +401,14 @@ class RPManager(commands.Cog):
 		if not channel_meta:
 			raise commands.BadArgument('Channel #{0} has no associated region!'.format(channel.name))
 		else:
-			await self._refresh_region_meta(channel_meta)
+			await self._refresh_region_meta(channel_meta, deep_update=True)
 			await ctx.message.add_reaction('✅')
 
 	
 	@commands.command()
 	@permissions.require(permissions.close)
 	async def close(self, ctx, *location_raw):
-		''' Closes a region and moves it to the inactive category. '''
+		''' Close a region and moves it to the inactive category. '''
 		regions = await self._list_regions(ctx.guild.id)
 		regions_filtered = []
 		final_region = None
@@ -429,7 +459,7 @@ class RPManager(commands.Cog):
 
 	@commands.command()
 	async def list(self, ctx, offset='0'):
-		''' Provides a list of regions present on this server.
+		''' Provide a list of regions present on this server.
 		  ' :param offset: optional parameter to start the list at the <offset>'th region.
 		'''
 		regions = await self._list_regions(ctx.guild.id)

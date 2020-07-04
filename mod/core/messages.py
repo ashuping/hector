@@ -10,7 +10,6 @@ class MessageManager(commands.Cog):
 	
 	@commands.Cog.listener()
 	async def on_raw_reaction_add(self, payload):
-		print('found on_raw_reaction_add')
 		if payload.user_id == self.bot.user.id:
 			return
 		if payload.emoji.name == CONSTANTS.REACTION_DELETE:
